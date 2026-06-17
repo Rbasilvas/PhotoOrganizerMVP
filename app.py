@@ -1,6 +1,7 @@
 ﻿import customtkinter as ctk
 from PIL import Image, ImageTk
 import os
+import json
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
@@ -9,6 +10,7 @@ ctk.set_default_color_theme("dark-blue")
 class PhotoOrganizerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.albums_file = "albums.json"
         self.title("Photo Organizer MVP")
         self.geometry("1100x700")
         self.minsize(1000, 650)
@@ -130,10 +132,34 @@ class PhotoOrganizerApp(ctk.CTk):
             self.btn_cloud.configure(image=self.icon_cloud, compound="left")
 
         # start
+        self.load_recent_albums()
         self.show_manage()
 
     def set_status(self, text):
         self.status.configure(text=text)
+
+    def load_albums(self):
+        if not os.path.exists(self.albums_file):
+            return []
+
+        try:
+            with open(self.albums_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("albums", [])
+        except:
+            return [] 
+         
+    def save_albums(self, albums):
+        with open(self.albums_file, "w", encoding="utf-8") as f:
+            json.dump({"albums": albums}, f, ensure_ascii=False, indent=4)
+
+    def load_recent_albums(self):
+        albums = self.load_albums()
+
+        self.recent_list.delete("0.0", "end")
+
+        for album in albums:
+            self.recent_list.insert("end", f"{album}\n")      
 
     def _hide_all(self):
         for p in (self.page_manage, self.page_recog, self.page_cloud):
@@ -164,8 +190,16 @@ class PhotoOrganizerApp(ctk.CTk):
         path = os.path.join(base, name)
         try:
             os.makedirs(path, exist_ok=True)
+            albums = self.load_albums()
+
+            if name not in albums:
+                albums.append(name)
+                self.save_albums(albums)
+
             self.album_text.insert("0.0", f"Álbum criado: {path}\n")
-            self.recent_list.insert("0.0", f"{name}\n")
+
+            self.load_recent_albums()
+
             self.set_status(f"Álbum '{name}' criado")
         except Exception as e:
             self.album_text.insert("0.0", f"Erro ao criar álbum: {e}\n")
