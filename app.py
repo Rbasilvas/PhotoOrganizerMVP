@@ -2,6 +2,7 @@
 from PIL import Image, ImageTk
 import os
 import json
+from tkinter import filedialog
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
@@ -88,7 +89,7 @@ class PhotoOrganizerApp(ctk.CTk):
         card2 = ctk.CTkFrame(cards, width=320, height=140, corner_radius=8)
         card2.pack(side="left", padx=8, pady=8)
         ctk.CTkLabel(card2, text="Importar fotos", font=ctk.CTkFont(size=14, weight="bold")).pack(padx=12, pady=(12, 6), anchor="w")
-        ctk.CTkButton(card2, text="Selecionar pasta (simulação)", command=lambda: self.set_status('Importação simulada')).pack(padx=12, pady=12, anchor="w")
+        ctk.CTkButton(card2, text="Selecionar Pasta", command=self.select_folder).pack(padx=12, pady=12, anchor="w")
 
         # Album viewer area
         self.album_view = ctk.CTkFrame(self.page_manage)
@@ -180,6 +181,29 @@ class PhotoOrganizerApp(ctk.CTk):
         self.page_cloud.pack(fill="both", expand=True)
         self.set_status("Visualizando Integração com Nuvem")
 
+    def select_folder(self):
+        folder = filedialog.askdirectory()
+
+        if not folder:
+            return
+
+        extensoes = (".jpg", ".jpeg", ".png", ".bmp", ".gif")
+
+        fotos = [
+            f for f in os.listdir(folder)
+            if f.lower().endswith(extensoes)
+        ]
+
+        total = len(fotos)
+
+        self.album_text.delete("0.0", "end")
+        self.album_text.insert(
+            "0.0",
+            f"Pasta selecionada:\n{folder}\n\nFotos encontradas: {total}"
+        )
+
+        self.set_status(f"{total} foto(s) encontradas")    
+
     def create_album(self):
         name = self.entry_album.get().strip()
         if not name:
@@ -205,6 +229,7 @@ class PhotoOrganizerApp(ctk.CTk):
             self.album_text.insert("0.0", f"Erro ao criar álbum: {e}\n")
             self.set_status("Erro ao criar álbum")
 
+    
     def simulate_attach(self):
         sample = os.path.join(os.path.dirname(__file__), "sample.jpg")
         if os.path.exists(sample):
