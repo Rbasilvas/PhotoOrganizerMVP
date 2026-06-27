@@ -3,6 +3,7 @@ from PIL import Image, ImageTk
 import os
 import json
 from tkinter import filedialog
+from PIL import Image
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
@@ -12,6 +13,9 @@ class PhotoOrganizerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.albums_file = "albums.json"
+        self.thumbnail_refs = []
+        self.selected_photos = []
+        self.current_folder = ""
         self.title("Photo Organizer MVP")
         self.geometry("1100x700")
         self.minsize(1000, 650)
@@ -90,12 +94,22 @@ class PhotoOrganizerApp(ctk.CTk):
         card2.pack(side="left", padx=8, pady=8)
         ctk.CTkLabel(card2, text="Importar fotos", font=ctk.CTkFont(size=14, weight="bold")).pack(padx=12, pady=(12, 6), anchor="w")
         ctk.CTkButton(card2, text="Selecionar Pasta", command=self.select_folder).pack(padx=12, pady=12, anchor="w")
+        ctk.CTkButton(
+            card2,
+            text="Adicionar ao Álbum",
+            command=self.add_photos_to_album
+        ).pack(padx=12, pady=(0, 12), anchor="w")
 
+        # Album viewer area
         # Album viewer area
         self.album_view = ctk.CTkFrame(self.page_manage)
         self.album_view.pack(fill="both", expand=True, padx=16, pady=12)
-        self.album_text = ctk.CTkTextbox(self.album_view)
-        self.album_text.pack(fill="both", expand=True, padx=8, pady=8)
+
+        self.album_text = ctk.CTkTextbox(self.album_view, height=150)
+        self.album_text.pack(fill="x", padx=8, pady=8)
+
+        self.thumb_frame = ctk.CTkScrollableFrame(self.album_view)
+        self.thumb_frame.pack(fill="both", expand=True, padx=8, pady=8)
 
         # Recognition page
         header2 = ctk.CTkLabel(self.page_recog, text="Reconhecimento de Fotos", font=ctk.CTkFont(size=18, weight="bold"))
@@ -160,7 +174,7 @@ class PhotoOrganizerApp(ctk.CTk):
         self.recent_list.delete("0.0", "end")
 
         for album in albums:
-            self.recent_list.insert("end", f"{album}\n")      
+            self.recent_list.insert("end", f"📁 {album}\n")      
 
     def _hide_all(self):
         for p in (self.page_manage, self.page_recog, self.page_cloud):
@@ -186,6 +200,8 @@ class PhotoOrganizerApp(ctk.CTk):
 
         if not folder:
             return
+        self.current_folder = folder
+        self.selected_photos.clear()
 
         extensoes = (".jpg", ".jpeg", ".png", ".bmp", ".gif")
 
@@ -197,12 +213,132 @@ class PhotoOrganizerApp(ctk.CTk):
         total = len(fotos)
 
         self.album_text.delete("0.0", "end")
-        self.album_text.insert(
-            "0.0",
-            f"Pasta selecionada:\n{folder}\n\nFotos encontradas: {total}"
+        for widget in self.thumb_frame.winfo_children():
+            widget.destroy()
+
+        self.thumbnail_refs.clear()
+
+        print("DEBUG select_folder:")
+        print(hasattr(self, "current_album"))
+
+        if hasattr(self, "current_album"):
+            print("VALOR =", self.current_album)
+        album_name = getattr(self, "current_album", "Nenhum álbum")
+
+        texto = (
+            f"Álbum ativo: {album_name}\n\n"
+            f"Pasta selecionada:\n{folder}\n\n"
+            f"Fotos encontradas: {total}\n\n"
         )
 
+        for foto in fotos[:20]:
+            texto += f"📷 {foto}\n"
+
+        self.album_text.insert("0.0", texto)
+        for foto in fotos[:6]:
+            caminho = os.path.join(folder, foto)
+
+            try:
+                img = Image.open(caminho)
+                img.thumbnail((120, 120))
+
+                thumb = ctk.CTkImage(
+                    light_image=img,
+                    dark_image=img,
+                    size=img.size
+                )
+
+                self.thumbnail_refs.append(thumb)
+
+                frame = ctk.CTkFrame(self.thumb_frame)
+
+                frame.pack(
+                    side="left",
+                    padx=10,
+                    pady=10
+                )
+
+                lbl = ctk.CTkLabel(
+                    frame,
+                    image=thumb,
+                    text=""
+                )
+
+                lbl.pack()
+
+                check = ctk.CTkCheckBox(
+                    frame,
+                    text=foto[:18]
+                )
+
+                check.pack(pady=(4, 0))
+
+            except Exception as e:
+                print("Erro miniatura:", foto, e)
+
         self.set_status(f"{total} foto(s) encontradas")    
+
+    def add_photos_to_album(self):
+
+        if not hasattr(self, "current_album"):
+            self.set_status("Crie um álbum primeiro")
+            return
+
+        album_path = os.path.join(
+            os.path.expanduser("~"),
+            "Pictures",
+            "PhotoOrganizerAlbums",
+            self.current_album
+        )
+
+        import shutil
+
+        copiados = 0
+
+        for widget in self.thumb_frame.winfo_children():
+
+            try:
+
+                checkbox = widget.winfo_children()[1]
+
+                if checkbox.get() == 1:
+
+                    nome_arquivo = checkbox.cget("text")
+
+                    for arquivo in os.listdir(self.current_folder):
+
+                        if arquivo.startswith(nome_arquivo):
+
+                            origem = os.path.join(
+                                self.current_folder,
+                                arquivo
+                            )
+
+                            destino = os.path.join(
+                                album_path,
+                                arquivo
+                            )
+
+                            shutil.copy2(
+                                origem,
+                                destino
+                            )
+
+                            copiados += 1
+
+                            break
+
+            except:
+                pass
+
+        self.set_status(
+            f"{copiados} foto(s) adicionadas ao álbum"
+        )
+
+        self.album_text.insert(
+            "end",
+            f"\n\n✅ {copiados} foto(s) copiadas para '{self.current_album}'"
+        )
 
     def create_album(self):
         name = self.entry_album.get().strip()
@@ -223,6 +359,10 @@ class PhotoOrganizerApp(ctk.CTk):
             self.album_text.insert("0.0", f"Álbum criado: {path}\n")
 
             self.load_recent_albums()
+
+            self.current_album = name
+
+            print("DEBUG:", self.current_album)
 
             self.set_status(f"Álbum '{name}' criado")
         except Exception as e:
