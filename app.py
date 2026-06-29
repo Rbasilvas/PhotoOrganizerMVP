@@ -6,6 +6,7 @@ from tkinter import filedialog
 
 from core.album_manager import AlbumManager
 from core.photo_manager import PhotoManager
+from core.thumbnail_manager import ThumbnailManager
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
@@ -19,6 +20,7 @@ class PhotoOrganizerApp(ctk.CTk):
 
         self.album_manager = AlbumManager(self.albums_file)
         self.photo_manager = PhotoManager()
+        self.thumbnail_manager = ThumbnailManager()
 
         self.thumbnail_refs = []
         self.selected_photos = []
@@ -239,15 +241,7 @@ class PhotoOrganizerApp(ctk.CTk):
             texto += f"Album: {nome}\n"
 
             try:
-
-                img = Image.open(foto)
-                img.thumbnail((120, 120))
-
-                thumb = ctk.CTkImage(
-                    light_image=img,
-                    dark_image=img,
-                    size=img.size
-                )
+                thumb = self.thumbnail_manager.create_thumbnail(foto)
 
                 self.thumbnail_refs.append(thumb)
 
