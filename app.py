@@ -7,6 +7,7 @@ from tkinter import filedialog
 from core.album_manager import AlbumManager
 from core.photo_manager import PhotoManager
 from core.thumbnail_manager import ThumbnailManager
+from core.viewer import Viewer
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
@@ -21,6 +22,7 @@ class PhotoOrganizerApp(ctk.CTk):
         self.album_manager = AlbumManager(self.albums_file)
         self.photo_manager = PhotoManager()
         self.thumbnail_manager = ThumbnailManager()
+        self.viewer = Viewer()
 
         self.thumbnail_refs = []
         self.selected_photos = []
@@ -138,7 +140,7 @@ class PhotoOrganizerApp(ctk.CTk):
         left.pack(side="left", fill="y", padx=(0, 12))
         self.preview_label = ctk.CTkLabel(left, text="Preview", width=420, height=320, fg_color="#1f1f1f", corner_radius=8)
         self.preview_label.pack(padx=8, pady=8)
-        ctk.CTkButton(left, text="Anexar foto (simula��o)", command=self.simulate_attach).pack(padx=8, pady=6)
+        ctk.CTkButton(left, text="Anexar foto (simulação)", command=self.simulate_attach).pack(padx=8, pady=6)
         right = ctk.CTkFrame(recog_area)
         right.pack(side="left", fill="both", expand=True)
         ctk.CTkLabel(right, text="Perfis detectados", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="nw", padx=8, pady=(8, 4))
@@ -146,9 +148,9 @@ class PhotoOrganizerApp(ctk.CTk):
         self.detected.pack(fill="both", expand=True, padx=8, pady=8)
 
         # Cloud page
-        header3 = ctk.CTkLabel(self.page_cloud, text="Integra��o com Nuvem", font=ctk.CTkFont(size=18, weight="bold"))
+        header3 = ctk.CTkLabel(self.page_cloud, text="Integração com Nuvem", font=ctk.CTkFont(size=18, weight="bold"))
         header3.pack(anchor="nw", padx=16, pady=(12, 6))
-        ctk.CTkLabel(self.page_cloud, text="Conectores dispon�veis (simula��o):").pack(anchor="nw", padx=16, pady=6)
+        ctk.CTkLabel(self.page_cloud, text="Conectores disponíveis (simulação):").pack(anchor="nw", padx=16, pady=6)
         ctk.CTkButton(self.page_cloud, text="Configurar Google Drive", command=lambda: self.not_implemented("Google Drive")).pack(padx=16, pady=6, anchor="nw")
         ctk.CTkButton(self.page_cloud, text="Configurar OneDrive", command=lambda: self.not_implemented("OneDrive")).pack(padx=16, pady=6, anchor="nw")
 
@@ -196,12 +198,12 @@ class PhotoOrganizerApp(ctk.CTk):
     def show_cloud(self):
         self._hide_all()
         self.page_cloud.pack(fill="both", expand=True)
-        self.set_status("Visualizando Integra��o com Nuvem")
+        self.set_status("Visualizando Integração com Nuvem")
 
     def select_photos(self):
 
         if not hasattr(self, "current_album"):
-            self.set_status("Crie um �lbum primeiro")
+            self.set_status("Crie um álbum primeiro")
             return
 
         fotos = filedialog.askopenfilenames(
@@ -230,7 +232,7 @@ class PhotoOrganizerApp(ctk.CTk):
         self.thumbnail_refs.clear()
 
         texto = (
-            f"�lbum ativo: {self.current_album}\n\n"
+            f"Álbum ativo: {self.current_album}\n\n"
             f"Fotos importadas: {len(self.selected_photos)}\n\n"
         )
 
@@ -255,6 +257,10 @@ class PhotoOrganizerApp(ctk.CTk):
                 )
 
                 lbl.pack()
+                lbl.bind(
+                    "<Button-1>",
+                    lambda event, caminho=foto: self.viewer.open(caminho)
+                )
 
                 ctk.CTkLabel(
                     frame,
@@ -303,18 +309,18 @@ class PhotoOrganizerApp(ctk.CTk):
                 self.tkimg = ImageTk.PhotoImage(img)
                 self.preview_label.configure(image=self.tkimg, text="")
                 self.detected.delete("0.0", "end")
-                self.detected.insert("0.0", "Pessoa A: 98%\nPessoa B: 87%\nTag: praia, fam�lia")
-                self.set_status("Imagem carregada (simula��o)")
+                self.detected.insert("0.0", "Pessoa A: 98%\nPessoa B: 87%\nTag: praia, família")
+                self.set_status("Imagem carregada (simulação)")
             except Exception as e:
                 self.preview_label.configure(text=f"Erro ao abrir imagem: {e}")
-                self.set_status("Erro ao carregar imagem")
+                self.set_status("Imagem carregada (simulação)")
         else:
             self.preview_label.configure(text="Nenhuma sample.jpg encontrada\n(coloque sample.jpg na pasta do projeto)")
             self.set_status("Nenhuma imagem sample.jpg")
 
     def not_implemented(self, name):
-        self.set_status(f"Integra��o com {name} n�o configurada")
-        self.preview_label.configure(text=f"Integra��o com {name} n�o configurada", image="")
+        self.set_status(f"Integração com {name} não configurada")
+        self.preview_label.configure(text=f"Integração com {name} não configurada", image="")
 
 
 if __name__ == "__main__":
