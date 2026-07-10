@@ -25,6 +25,8 @@ class Viewer:
 
         self.window = ctk.CTkToplevel()
 
+        self.window.withdraw()
+
         self.window.title("Visualizador")
 
         self.window.geometry("1000x700")
@@ -100,6 +102,8 @@ class Viewer:
         )
 
         self.show_photo()
+
+        self.window.deiconify()
 
     def show_photo(self):
 
