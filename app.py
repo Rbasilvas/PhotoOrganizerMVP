@@ -26,6 +26,7 @@ class PhotoOrganizerApp(ctk.CTk):
 
         self.thumbnail_refs = []
         self.selected_photos = []
+        self.current_album_button = None
 
         self.title("Photo Organizer MVP")
         self.geometry("1100x700")
@@ -72,9 +73,10 @@ class PhotoOrganizerApp(ctk.CTk):
         self.btn_manage.pack(fill="x", padx=12, pady=(20, 8))
         self.btn_recog.pack(fill="x", padx=12, pady=8)
         self.btn_cloud.pack(fill="x", padx=12, pady=8)
-        ctk.CTkLabel(sidebar, text="Albuns recentes", font=ctk.CTkFont(size=12, weight="bold")).pack(padx=12, pady=(18, 6), anchor="w")
-        self.recent_list = ctk.CTkTextbox(sidebar, width=200, height=180)
-        self.recent_list.pack(padx=12, pady=(0, 12))
+        ctk.CTkLabel(sidebar, text="Álbuns recentes",font=ctk.CTkFont(size=12, weight="bold")).pack(padx=12, pady=(18, 6), anchor="w")
+        self.recent_frame = ctk.CTkScrollableFrame(sidebar,width=200,height=180)
+        self.recent_frame.pack(padx=12,pady=(0, 12),fill="both",expand=False
+        )
 
         # Content area
         self.content = ctk.CTkFrame(container, corner_radius=8)
@@ -174,12 +176,73 @@ class PhotoOrganizerApp(ctk.CTk):
         self.status.configure(text=text)
   
     def load_recent_albums(self):
+
         albums = self.album_manager.load_albums()
 
-        self.recent_list.delete("0.0", "end")
+        for widget in self.recent_frame.winfo_children():
+            widget.destroy()
 
         for album in albums:
-            self.recent_list.insert("end", f"Album: {album}\n")      
+
+            btn = ctk.CTkButton(
+                self.recent_frame,
+                text=album,
+                anchor="w",
+                fg_color="#2B2B2B",
+                hover_color="#2B2B2B",
+                text_color="white"
+            )
+
+            btn.configure(
+                command=lambda a=album, b=btn: self.select_album(a, b)
+            )
+
+            btn.pack(fill="x", pady=2)
+
+        
+    def select_album(self, album, button):
+
+        # Remove o destaque do botão anteriormente selecionado
+        if self.current_album_button is not None:
+            self.current_album_button.configure(
+            fg_color="#2B2B2B",
+            hover_color="#2B2B2B"
+        )
+
+        # Destaca o botão atual
+        button.configure(
+            fg_color="#1F6AA5",
+            hover_color="#1F6AA5"
+        )
+
+        self.current_album_button = button
+
+        self.current_album = album
+
+        pasta = os.path.join(
+            os.path.expanduser("~"),
+            "Pictures",
+            "PhotoOrganizerAlbums",
+            album
+        )
+
+        self.selected_photos = []
+
+        if os.path.exists(pasta):
+
+            for arquivo in os.listdir(pasta):
+
+                if arquivo.lower().endswith(
+                    (".jpg", ".jpeg", ".png", ".bmp", ".gif")
+                ):
+
+                    self.selected_photos.append(
+                        os.path.join(pasta, arquivo)
+                    )
+
+        self.refresh_gallery()
+
+        self.set_status(f"Álbum ativo: {album}")
 
     def _hide_all(self):
         for p in (self.page_manage, self.page_recog, self.page_cloud):
@@ -224,6 +287,10 @@ class PhotoOrganizerApp(ctk.CTk):
         self.set_status(
             f"{len(self.selected_photos)} foto(s) importadas"
         )
+        self.refresh_gallery()
+      
+    def refresh_gallery(self):
+
         self.album_text.delete("0.0", "end")
 
         for widget in self.thumb_frame.winfo_children():
@@ -236,19 +303,25 @@ class PhotoOrganizerApp(ctk.CTk):
             f"Fotos importadas: {len(self.selected_photos)}\n\n"
         )
 
-        for foto in self.selected_photos:
+        for index, foto in enumerate(self.selected_photos):
 
             nome = os.path.basename(foto)
 
-            texto += f"Album: {nome}\n"
+            texto += f"Foto: {nome}\n"
 
             try:
+
                 thumb = self.thumbnail_manager.create_thumbnail(foto)
 
                 self.thumbnail_refs.append(thumb)
 
                 frame = ctk.CTkFrame(self.thumb_frame)
-                frame.pack(side="left", padx=10, pady=10)
+
+                frame.pack(
+                    side="left",
+                    padx=10,
+                    pady=10
+                )
 
                 lbl = ctk.CTkLabel(
                     frame,
@@ -257,9 +330,13 @@ class PhotoOrganizerApp(ctk.CTk):
                 )
 
                 lbl.pack()
+
                 lbl.bind(
                     "<Button-1>",
-                    lambda event, caminho=foto: self.viewer.open(caminho)
+                    lambda event, idx=index: self.viewer.open(
+                        self.selected_photos,
+                        idx
+                    )
                 )
 
                 ctk.CTkLabel(
@@ -269,10 +346,9 @@ class PhotoOrganizerApp(ctk.CTk):
                 ).pack(pady=(4, 0))
 
             except Exception as e:
-                print("Erro:", e)
+                print(e)
 
         self.album_text.insert("0.0", texto)
-      
     
     def create_album(self):
 

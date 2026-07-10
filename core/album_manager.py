@@ -24,8 +24,11 @@ class AlbumManager:
     def load_albums(self):
 
         with open(self.albums_file, "r", encoding="utf-8") as f:
-
             data = json.load(f)
+
+        print("ARQUIVO:", self.albums_file)
+        print("DADOS:", data)
+        print("TOTAL:", len(data["albums"]))
 
         return data["albums"]
 
