@@ -29,8 +29,9 @@ class PhotoOrganizerApp(ctk.CTk):
         self.current_album_button = None
 
         self.title("Photo Organizer MVP")
-        self.geometry("1100x700")
-        self.minsize(1000, 650)
+        self.after(100, lambda: self.state("zoomed"))
+        largura = 1000
+        altura = 700
 
         # Top bar
         top = ctk.CTkFrame(self, height=70, corner_radius=0)
@@ -186,7 +187,7 @@ class PhotoOrganizerApp(ctk.CTk):
 
             btn = ctk.CTkButton(
                 self.recent_frame,
-                text=album,
+                text=f"{album} ({self.album_manager.get_photo_count(album)})",
                 anchor="w",
                 fg_color="#2B2B2B",
                 hover_color="#2B2B2B",

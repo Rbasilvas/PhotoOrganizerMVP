@@ -25,11 +25,21 @@ class Viewer:
 
         self.window = ctk.CTkToplevel()
 
-        self.window.withdraw()
-
+        
         self.window.title("Visualizador")
 
-        self.window.geometry("1000x700")
+        largura = 1000
+        altura = 700
+
+        self.window.update_idletasks()
+
+        largura_tela = self.window.winfo_screenwidth()
+        altura_tela = self.window.winfo_screenheight()
+
+        x = (largura_tela // 2) - (largura // 2)
+        y = (altura_tela // 2) - (altura // 2) - 40
+
+        self.window.geometry(f"{largura}x{altura}+{x}+{y}")
 
         self.window.lift()
         self.window.focus_force()
@@ -43,23 +53,12 @@ class Viewer:
         self.window.bind("<Left>", lambda e: self.previous_photo())
         self.window.bind("<Right>", lambda e: self.next_photo())
         self.window.bind("<Escape>", lambda e: self.window.destroy())
+        
 
         main = ctk.CTkFrame(self.window)
         main.pack(fill="both", expand=True)
 
-        # Botão esquerda
-        self.left_button = ctk.CTkButton(
-            main,
-            text="◀",
-            width=60,
-            command=self.previous_photo
-        )
-
-        self.left_button.pack(
-            side="left",
-            padx=15
-        )
-
+        
         # Área central
         center = ctk.CTkFrame(main)
 
@@ -76,35 +75,86 @@ class Viewer:
 
         self.image_label.pack(
             expand=True,
-            pady=(15, 5)
+            fill="both",
+            padx=20,
+            pady=(20, 10)
         )
 
-        self.info_label = ctk.CTkLabel(
+        bottom = ctk.CTkFrame(
             center,
-            text=""
+            height=90,
+            fg_color="transparent"
         )
 
-        self.info_label.pack(
-            pady=(0, 15)
+        bottom.pack(
+            fill="x",
+            side="bottom"
         )
 
-        # Botão direita
-        self.right_button = ctk.CTkButton(
-            main,
-            text="▶",
-            width=60,
+        bottom.pack_propagate(False)
+
+        navigation = ctk.CTkFrame(
+            bottom,
+            fg_color="transparent"
+        )
+
+        navigation.pack(
+            pady=(8, 4)
+        )
+
+        self.btn_prev = ctk.CTkButton(
+            navigation,
+            text="❮",
+            width=36,
+            height=36,
+            corner_radius=18,
+            command=self.previous_photo
+        )
+
+        self.btn_prev.pack(
+            side="left",
+            padx=20
+        )
+
+        self.counter_label = ctk.CTkLabel(
+            navigation,
+            text="",
+            font=ctk.CTkFont(
+                size=18,
+                weight="bold"
+            )
+        )
+
+        self.counter_label.pack(
+            side="left"
+        )
+
+        self.btn_next = ctk.CTkButton(
+            navigation,
+            text="❯",
+            width=36,
+            height=36,
+            corner_radius=18,
             command=self.next_photo
         )
 
-        self.right_button.pack(
-            side="right",
-            padx=15
+        self.btn_next.pack(
+            side="left",
+            padx=20
         )
 
+        self.info_label = ctk.CTkLabel(
+            bottom,
+            text="",
+            font=ctk.CTkFont(size=14)
+        )
+
+        self.info_label.pack()
+
+                
         self.show_photo()
 
-        self.window.deiconify()
-
+        
     def show_photo(self):
 
         image_path = self.photos[self.current_index]
@@ -128,11 +178,12 @@ class Viewer:
 
         nome = os.path.basename(image_path)
 
+        self.counter_label.configure(
+            text=f"{self.current_index + 1} / {len(self.photos)}"
+        )
+
         self.info_label.configure(
-            text=(
-                f"Foto {self.current_index + 1} de {len(self.photos)}\n"
-                f"{nome}"
-            )
+            text=nome
         )
 
     def next_photo(self):

@@ -66,3 +66,29 @@ class AlbumManager:
             self.save_albums(albums)
 
         return path
+    
+    def get_photo_count(self, album):
+
+        pasta = os.path.join(
+            os.path.expanduser("~"),
+            "Pictures",
+            "PhotoOrganizerAlbums",
+            album
+        )
+
+        if not os.path.exists(pasta):
+            return 0
+
+        extensoes = (
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".bmp",
+            ".gif"
+        )
+
+        return sum(
+            1
+            for arquivo in os.listdir(pasta)
+            if arquivo.lower().endswith(extensoes)
+        )
