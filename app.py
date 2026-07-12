@@ -40,6 +40,7 @@ class PhotoOrganizerApp(ctk.CTk):
         self.logo.pack(side="left", padx=20)
         self.search = ctk.CTkEntry(top, width=360, placeholder_text="Pesquisar álbuns, pessoas ou tags...")
         self.search.pack(side="right", padx=20, pady=14)
+        self.search.bind("<KeyRelease>", self.filter_albums)
 
         # --- Theme toggle and header extras ---
         self.theme_var = ctk.StringVar(value="dark-blue")
@@ -183,6 +184,8 @@ class PhotoOrganizerApp(ctk.CTk):
         for widget in self.recent_frame.winfo_children():
             widget.destroy()
 
+        self.album_buttons = {}
+
         for album in albums:
 
             btn = ctk.CTkButton(
@@ -200,23 +203,81 @@ class PhotoOrganizerApp(ctk.CTk):
 
             btn.pack(fill="x", pady=2)
 
+            self.album_buttons[album] = btn
+
+    def filter_albums(self, event=None):
+
+        texto = self.search.get().lower().strip()
+
+        albums = self.album_manager.load_albums()
+
+        for widget in self.recent_frame.winfo_children():
+            widget.destroy()
+
+        self.album_buttons = {}
+
+        # Primeiro procura correspondência exata
+        encontrados = [
+            album for album in albums
+            if album.lower() == texto
+        ]
+
+        # Se não encontrou exatamente, usa busca parcial
+        if not encontrados:
+            encontrados = [
+                album for album in albums
+                if texto in album.lower()
+            ]
+
+        for album in encontrados:
+
+                btn = ctk.CTkButton(
+                    self.recent_frame,
+                    text=f"{album} ({self.album_manager.get_photo_count(album)})",
+                    anchor="w",
+                    fg_color="#2B2B2B",
+                    hover_color="#2B2B2B",
+                    text_color="white"
+                )
+
+                btn.configure(
+                    command=lambda a=album, b=btn: self.select_album(a, b)
+                )
+
+                btn.pack(fill="x", pady=2)
+
+                self.album_buttons[album] = btn
+
+        # Se a pesquisa ficar vazia, mantém o álbum selecionado destacado
+        if texto == "" and hasattr(self, "current_album"):
+            if self.current_album in self.album_buttons:
+                self.album_buttons[self.current_album].configure(
+                    fg_color="#1F6AA5",
+                    hover_color="#1F6AA5"
+                )
+
         
     def select_album(self, album, button):
 
-        # Remove o destaque do botão anteriormente selecionado
-        if self.current_album_button is not None:
-            self.current_album_button.configure(
-            fg_color="#2B2B2B",
-            hover_color="#2B2B2B"
-        )
+        print("CLICK:", album)
 
-        # Destaca o botão atual
-        button.configure(
-            fg_color="#1F6AA5",
-            hover_color="#1F6AA5"
-        )
+        # Remove o destaque de todos os botões
+        for btn in self.album_buttons.values():
 
-        self.current_album_button = button
+            btn.configure(
+                fg_color="#2B2B2B",
+                hover_color="#2B2B2B"
+            )
+
+        # Destaca o álbum selecionado
+        if album in self.album_buttons:
+
+            self.album_buttons[album].configure(
+                fg_color="#1F6AA5",
+                hover_color="#1F6AA5"
+            )
+
+        self.current_album_button = self.album_buttons.get(album)
 
         self.current_album = album
 
